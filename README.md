@@ -118,14 +118,15 @@ Website Retrieval Assignment - Developed a Retrieval Augmented Generation (RAG) 
 
 ---
 
----
-
 ## 🚀 Getting Started
 
 ### 1️⃣ Clone & Install
 ```bash
-git clone https://github.com/yourname/rag-web-qa.git
-cd rag-web-qa
+git clone https://github.com/SSaranya19/RAG-Website-Retrieval-QA.git
+cd RAG-Website-Retrieval-QA
 python -m venv .venv
 source .venv/bin/activate  # (Windows: .venv\Scripts\activate)
 pip install -r requirements.txt
+Copy .env.example → .env and set values.
+Run Backend : uvicorn backend.main:app --reload --port 8000
+Run Frontend: streamlit run app.py
