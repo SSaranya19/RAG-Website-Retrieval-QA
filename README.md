@@ -10,7 +10,29 @@ Website Retrieval Assignment - Developed a Retrieval Augmented Generation (RAG) 
 - 🔐 Allows **user authentication** before use  
 
 ---
+### 📂 Project Structure
+```bash
+RAG-QA-APP/
+│
+├── backend/                     # Backend service (FastAPI)
+│   ├── __init__.py              # Marks package, can include initialization code
+│   ├── auth.py                  # Handles authentication (JWT, user auth, etc.)
+│   ├── embeddings.py            # Embedding generation logic
+│   ├── engine.py                # Core RAG engine (retrieval + generation)
+│   ├── main.py                  # FastAPI entry point
+│   ├── models.py                # Pydantic models / schema definitions
+│   ├── router.py                # API routes definition
+│   ├── vector_store.py          # Vector database operations (e.g., FAISS/Chroma)
+│   └── web_loader.py            # Logic to fetch and preprocess website content
+│
+├── frontend/                    # Frontend service (Streamlit/Gradio)
+│   ├── app.py                   # Frontend app entry point
+│
+├── .env                         # Environment variables (API keys, configs)
+├── requirements.txt             # Python dependencies
 
+```
+---
 ## 🧩 Architecture Overview
 
 ### 🔹 1. Data Source & Indexing
