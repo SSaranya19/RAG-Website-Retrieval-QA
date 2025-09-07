@@ -22,10 +22,10 @@ RAG-QA-APP/
 │   ├── main.py                  # FastAPI entry point
 │   ├── models.py                # Pydantic models / schema definitions
 │   ├── router.py                # API routes definition
-│   ├── vector_store.py          # Vector database operations (e.g., FAISS/Chroma)
+│   ├── vector_store.py          # Vector database operations (Chroma)
 │   └── web_loader.py            # Logic to fetch and preprocess website content
 │
-├── frontend/                    # Frontend service (Streamlit/Gradio)
+├── frontend/                    # Frontend service (Streamlit)
 │   ├── app.py                   # Frontend app entry point
 │
 ├── .env                         # Environment variables (API keys, configs)
