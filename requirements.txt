@@ -1,0 +1,34 @@
+# FastAPI + server
+fastapi==0.95.2
+uvicorn[standard]==0.21.1
+
+# Authentication & JWT
+python-jose[cryptography]
+PyJWT>=2.8.0
+
+# Web / HTTP
+pydantic==1.10.12
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Helper libs for web scraping and text extraction
+beautifulsoup4==4.12.2
+lxml
+readability-lxml
+
+# Chroma / Vector DB
+chromadb==0.4.9
+
+# LangChain (used in your engine)
+langchain==0.0.302  # optional helpers (text splitter)
+
+# Embeddings 
+openai==0.27.8
+
+# Streamlit
+streamlit==1.25.0
+
+# Other utilities
+numpy
+tqdm==4.66.1
+pybase64>=1.2.0
