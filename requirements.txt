@@ -32,3 +32,6 @@ streamlit==1.25.0
 numpy
 tqdm==4.66.1
 pybase64>=1.2.0
+nltk
+sentence-transformers
+
