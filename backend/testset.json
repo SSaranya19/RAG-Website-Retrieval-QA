@@ -1,0 +1,24 @@
+[
+  {
+    "query": "What is RAG?",
+    "relevant_urls": [
+      "https://huyenchip.com/2024/07/25/genai-platform.html"
+    ],
+    "reference_answer": "The most well-known pattern for context construction is RAG, Retrieval-Augmented Generation. RAG consists of two components: a generator (e.g. a language model) and a retriever, which retrieves relevant information from external sources."
+  },
+  {
+    "query": "What is colbert?",
+    "relevant_urls": [
+      "https://jina.ai/news/what-is-colbert-and-late-interaction-and-why-they-matter-in-search/"
+    ],
+    "reference_answer": "The name ColBERT stands for Contextualized Late Interaction over BERT, a model stems from the Stanford University, that leverages the deep language understanding of BERT while introducing a novel interaction mechanism. This mechanism, known as late interaction, allows for efficient and precise retrieval by processing queries and documents separately until the final stages of the retrieval process. Specifically, there are two versions of the model: ColBERT: The initial model was the brainchild of Omar Khattab and Matei Zaharia, presenting a novel approach to information retrieval through the ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT paper. Their work was published in SIGIR 2020."
+  },
+    {
+    "query": "What Causes Hallucinations?",
+    "relevant_urls": [
+      "https://lilianweng.github.io/posts/2024-07-07-hallucination/"
+    ],
+    "reference_answer": "In-context hallucination: The model output should be consistent with the source content in context. Extrinsic hallucination: The model output should be grounded by the pre-training dataset. However, given the size of the pre-training dataset, it is too expensive to retrieve and identify conflicts per generation. If we consider the pre-training data corpus as a proxy for world knowledge, we essentially try to ensure the model output is factual and verifiable by external world knowledge. Equally importantly, when the model does not know about a fact, it should say so. This post focuses on extrinsic hallucination. To avoid hallucination, LLMs need to be (1) factual and (2) acknowledge not knowing the answer when applicable."
+  }
+  
+]

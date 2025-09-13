@@ -1,0 +1,60 @@
+{
+  "retrieval": {
+    "per_query": [
+      {
+        "query": "What is RAG?",
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "ap": 0.5,
+        "rr": 0.5,
+        "retrieved": [
+          "https://jina.ai/news/what-is-colbert-and-late-interaction-and-why-they-matter-in-search",
+          "https://huyenchip.com/2024/07/25/genai-platform.html",
+          "https://lilianweng.github.io/posts/2024-07-07-hallucination"
+        ],
+        "relevant": [
+          "https://huyenchip.com/2024/07/25/genai-platform.html"
+        ]
+      },
+      {
+        "query": "What is colbert?",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap": 1.0,
+        "rr": 1.0,
+        "retrieved": [
+          "https://jina.ai/news/what-is-colbert-and-late-interaction-and-why-they-matter-in-search"
+        ],
+        "relevant": [
+          "https://jina.ai/news/what-is-colbert-and-late-interaction-and-why-they-matter-in-search"
+        ]
+      },
+      {
+        "query": "What Causes Hallucinations?",
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6666666666666666,
+        "ap": 1.0,
+        "rr": 1.0,
+        "retrieved": [
+          "https://lilianweng.github.io/posts/2024-07-07-hallucination",
+          "https://huyenchip.com/2024/07/25/genai-platform.html"
+        ],
+        "relevant": [
+          "https://lilianweng.github.io/posts/2024-07-07-hallucination"
+        ]
+      }
+    ],
+    "macro_precision": 0.611111111111111,
+    "macro_recall": 1.0,
+    "macro_f1": 0.7222222222222222,
+    "micro_precision": 0.5,
+    "micro_recall": 1.0,
+    "micro_f1": 0.6666666666666666,
+    "MAP": 0.8333333333333334,
+    "MRR": 0.8333333333333334,
+    "top_k": 5
+  }
+}
