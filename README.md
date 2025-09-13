@@ -97,7 +97,10 @@ RAG-QA-APP/
 - All API requests from Streamlit include the token in headers.  
 
 ---
+### 🔹 Evaluaion
+  <img width="440" height="59" alt="image" src="https://github.com/user-attachments/assets/8f37f7c6-af1e-4e6a-84f4-92cb5a59c5ef" />
 
+---
 ## 🛠️ Tech Stack
 
 | Layer        | Technology                               |
