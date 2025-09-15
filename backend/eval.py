@@ -1,47 +1,30 @@
-"""
-Retrieval-only evaluation harness for a RAG pipeline.
-
-- Computes per-query precision/recall/F1, AP@k, RR, MAP, MRR
-- Deduplicates & normalizes URLs before matching
-- CLI: python eval.py --testfile testset.json --topk 5 --out results.json --verbose
-
-Place this file where it can import `backend.engine.engine`.
-"""
-
 import os
 import json
 import argparse
 from typing import List, Dict, Tuple
-from collections import defaultdict
-from urllib.parse import urlparse, urlunparse
+import math
 
-# Project import
 from backend.engine import engine
+from backend.embeddings import EmbeddingProvider
+
+import numpy as np
+from urllib.parse import urlparse, urlunparse
 
 # ----------------- Utilities -----------------
 
 def normalize_url(url: str) -> str:
-    """
-    Basic normalization for URL matching:
-    - Remove trailing slash
-    - Lowercase scheme+netloc
-    - Remove fragment
-    - Keep path and query
-    """
     if not url:
         return url
     try:
         p = urlparse(url.strip())
         scheme = (p.scheme or "http").lower()
         netloc = p.netloc.lower()
-        # remove default ports
         if netloc.endswith(":80") and scheme == "http":
             netloc = netloc[:-3]
         if netloc.endswith(":443") and scheme == "https":
             netloc = netloc[:-4]
-        path = p.path.rstrip("/")  # remove trailing slash
-        new = urlunparse((scheme, netloc, path, "", p.query, ""))  # drop params & fragment
-        return new
+        path = p.path.rstrip("/")
+        return urlunparse((scheme, netloc, path, "", p.query, ""))
     except Exception:
         return url.strip().rstrip("/")
 
@@ -72,10 +55,6 @@ def precision_recall_f1(retrieved: set, relevant: set) -> Tuple[float, float, fl
     return prec, rec, f1
 
 def average_precision_at_k(retrieved_list: List[str], relevant_set: set, k: int) -> float:
-    """
-    AP@k with deduplication of retrieved_list (preserve first occurrence).
-    Returns value in [0,1].
-    """
     if not relevant_set:
         return 0.0
     retrieved_uniq = _unique_preserve_order(retrieved_list)[:k]
@@ -97,13 +76,16 @@ def reciprocal_rank(retrieved_list: List[str], relevant_set: set) -> float:
             return 1.0 / i
     return 0.0
 
+def cosine_sim(a: List[float], b: List[float]) -> float:
+    a = np.array(a, dtype=float)
+    b = np.array(b, dtype=float)
+    if np.linalg.norm(a) == 0 or np.linalg.norm(b) == 0:
+        return 0.0
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
 # ----------------- Core evaluation -----------------
 
 def evaluate_retrieval(testset: List[Dict], top_k: int = 5, verbose: bool = False) -> Dict:
-    """
-    testset: list of {"query": str, "relevant_urls": [str], ...}
-    Returns aggregated retrieval metrics and per-query breakdown.
-    """
     per_query = []
     sum_ap = 0.0
     sum_rr = 0.0
@@ -115,24 +97,16 @@ def evaluate_retrieval(testset: List[Dict], top_k: int = 5, verbose: bool = Fals
     for item in testset:
         query = item.get("query", "").strip()
         raw_relevant = item.get("relevant_urls", []) or []
-        # Normalize relevant URLs
         relevant_urls = {normalize_url(u) for u in raw_relevant if u}
 
         if not query:
             per_query.append({
-                "query": query,
-                "precision": 0.0,
-                "recall": 0.0,
-                "f1": 0.0,
-                "ap": 0.0,
-                "rr": 0.0,
-                "retrieved": [],
-                "relevant": list(relevant_urls),
+                "query": query, "precision": 0.0, "recall": 0.0, "f1": 0.0,
+                "ap": 0.0, "rr": 0.0, "retrieved": [], "relevant": list(relevant_urls),
                 "note": "empty query"
             })
             continue
 
-        # Retrieve using engine
         try:
             hits = engine.retrieve(query, top_k=top_k) or []
         except Exception as e:
@@ -141,7 +115,6 @@ def evaluate_retrieval(testset: List[Dict], top_k: int = 5, verbose: bool = Fals
                 print(f"[evaluate_retrieval] engine.retrieve error for query '{query}': {e}")
 
         retrieved_list_raw = [h.get("metadata", {}).get("url") for h in hits if h.get("metadata")]
-        # Normalize and deduplicate preserving first occurrence
         retrieved_list = _unique_preserve_order([normalize_url(u) for u in retrieved_list_raw if u])
         retrieved_set = set(retrieved_list)
 
@@ -150,14 +123,8 @@ def evaluate_retrieval(testset: List[Dict], top_k: int = 5, verbose: bool = Fals
         rr = reciprocal_rank(retrieved_list, relevant_urls)
 
         per_query.append({
-            "query": query,
-            "precision": prec,
-            "recall": rec,
-            "f1": f1,
-            "ap": ap,
-            "rr": rr,
-            "retrieved": retrieved_list,
-            "relevant": list(relevant_urls)
+            "query": query, "precision": prec, "recall": rec, "f1": f1,
+            "ap": ap, "rr": rr, "retrieved": retrieved_list, "relevant": list(relevant_urls)
         })
 
         sum_ap += ap
@@ -182,30 +149,78 @@ def evaluate_retrieval(testset: List[Dict], top_k: int = 5, verbose: bool = Fals
 
     micro_precision = (micro_tp / micro_retrieved) if micro_retrieved else 0.0
     micro_recall = (micro_tp / micro_relevant) if micro_relevant else 0.0
-    if micro_precision + micro_recall == 0:
-        micro_f1 = 0.0
-    else:
-        micro_f1 = 2 * micro_precision * micro_recall / (micro_precision + micro_recall)
+    micro_f1 = 0.0 if (micro_precision + micro_recall == 0) else 2 * micro_precision * micro_recall / (micro_precision + micro_recall)
 
     return {
         "per_query": per_query,
-        "macro_precision": macro_precision,
-        "macro_recall": macro_recall,
-        "macro_f1": macro_f1,
-        "micro_precision": micro_precision,
-        "micro_recall": micro_recall,
-        "micro_f1": micro_f1,
-        "MAP": map_score,
-        "MRR": mrr,
-        "top_k": top_k
+        "macro_precision": macro_precision, "macro_recall": macro_recall, "macro_f1": macro_f1,
+        "micro_precision": micro_precision, "micro_recall": micro_recall, "micro_f1": micro_f1,
+        "MAP": map_score, "MRR": mrr, "top_k": top_k
     }
+
+# ----------------- Generation (only embedding similarity) -----------------
+
+def generate_answer_for_query(query: str, top_k: int = 5):
+    try:
+        hits = engine.retrieve(query, top_k=top_k) or []
+    except Exception:
+        hits = []
+
+    grouped = {}
+    for h in hits:
+        url = h.get("metadata", {}).get("url")
+        if not url:
+            continue
+        grouped.setdefault(url, []).append(h.get("document", ""))
+
+    final_parts = []
+    sources = []
+    for url, docs in grouped.items():
+        final_parts.append(" ".join([d[:400] for d in docs]))
+        sources.append(normalize_url(url))
+
+    return " ".join(final_parts).strip(), sources
+
+def evaluate_generation(testset: List[Dict], top_k: int = 5, verbose: bool = False) -> Dict:
+    embedder = EmbeddingProvider()
+    per_query = []
+    sum_embed_sim = 0.0
+    qcount = 0
+
+    for item in testset:
+        query = item.get("query", "").strip()
+        ref = item.get("reference_answer", "") or ""
+        if not query or not ref.strip():
+            continue
+        qcount += 1
+        generated, sources = generate_answer_for_query(query, top_k=top_k)
+
+        embed_sim = 0.0
+        try:
+            v_gen = embedder.embed_texts([generated])[0] if generated.strip() else None
+            v_ref = embedder.embed_texts([ref])[0] if ref.strip() else None
+            if v_gen is not None and v_ref is not None:
+                embed_sim = cosine_sim(v_gen, v_ref)
+        except Exception:
+            embed_sim = 0.0
+
+        per_query.append({"query": query, "reference": ref, "generated": generated,
+                          "sources": sources, "embed_cosine": embed_sim})
+
+        sum_embed_sim += embed_sim
+
+        if verbose:
+            print(f"Q: {query}")
+            print(f"  EMB_SIM={embed_sim:.4f}\n")
+
+    denom = qcount or 1
+    return {"per_query": per_query, "avg_embed_cosine": sum_embed_sim / denom, "top_k": top_k}
 
 # ----------------- CLI -----------------
 
 def load_testset(path: str) -> List[Dict]:
     with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return data
+        return json.load(f)
 
 def save_results(outpath: str, data: Dict):
     with open(outpath, "w", encoding="utf-8") as f:
@@ -213,9 +228,9 @@ def save_results(outpath: str, data: Dict):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--testfile", "-t", required=True, help="Path to testset JSON")
-    parser.add_argument("--topk", "-k", default=5, type=int, help="top_k for retrieval")
-    parser.add_argument("--out", "-o", default="eval_results.json", help="output file")
+    parser.add_argument("--testfile", "-t", required=True)
+    parser.add_argument("--topk", "-k", type=int, default=5)
+    parser.add_argument("--out", "-o", default="eval_results.json")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
@@ -224,14 +239,20 @@ def main():
     print("Running retrieval evaluation...")
     retrieval_results = evaluate_retrieval(testset, top_k=args.topk, verbose=args.verbose)
 
-    results = {"retrieval": retrieval_results}
+    print("Running generation evaluation (embedding similarity only)...")
+    generation_results = evaluate_generation(testset, top_k=args.topk, verbose=args.verbose)
+
+    results = {"retrieval": retrieval_results, "generation": generation_results}
     save_results(args.out, results)
     print(f"Saved results to {args.out}")
 
-    # Summary
-    print("\n=== Evaluation Summary ===")
+    print("\n=== SUMMARY ===")
     print(f"Retrieval (MAP={retrieval_results['MAP']:.4f}, MRR={retrieval_results['MRR']:.4f})")
-    print(f"Retrieval (macro P/R/F1) = {retrieval_results['macro_precision']:.4f} / {retrieval_results['macro_recall']:.4f} / {retrieval_results['macro_f1']:.4f}")
+    print(f"Retrieval (macro P/R/F1) = {retrieval_results['macro_precision']:.4f} / "
+          f"{retrieval_results['macro_recall']:.4f} / {retrieval_results['macro_f1']:.4f}")
+    print(f"Retrieval (micro P/R/F1) = {retrieval_results['micro_precision']:.4f} / "
+          f"{retrieval_results['micro_recall']:.4f} / {retrieval_results['micro_f1']:.4f}")
+    print(f"Generation (avg EMB_SIM={generation_results['avg_embed_cosine']:.4f})")
 
 if __name__ == "__main__":
     main()
