@@ -98,7 +98,7 @@ RAG-QA-APP/
 
 ---
 ### 🔹 Evaluation
-  <img width="422" height="69" alt="image" src="https://github.com/user-attachments/assets/4931028d-cef8-4173-80c4-46b9e81e6efa" />
+  <img width="527" height="67" alt="image" src="https://github.com/user-attachments/assets/0d330392-97a0-486c-9fe3-c03c65a64756" />
 
 ---
 ### 🔹 Deployment
